@@ -1,4 +1,4 @@
-name: Build My OpenWrt
+name: Build My qBittorrent
 
 on: 
   release:
@@ -39,45 +39,21 @@ jobs:
         sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
     - name: Clone source code
       env: 
-        REPO_URL: https://github.com/coolsnowwolf/lede
+        REPO_URL: https://github.com/qbittorrent/qBittorrent.git
         REPO_BRANCH: master
       run: git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 
     - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
+      run: cd openwrt && ./configure
 
     - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
+      run: cd openwrt && make && make install
 
-    - name: Load custom configuration
-      env:
-        CONFIG_FILE: 'my.config'
-        DIY_SH: 'diy.sh'
-      run: |
-        [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_SH
-        cd openwrt
-        ../$DIY_SH
-        make defconfig
+    
 #    - name: SSH connection to Actions
 #      uses: P3TERX/debugger-action@master
 
-    - name: Download package
-      run: |
-        cd openwrt && make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
-    - name: Multi-thread compile
-      run: |
-        cd openwrt
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc)
-    - name: Single-thread compile
-      if: failure()
-      run: |
-        cd openwrt
-        make -j1 V=s
+
     - name: Upload bin directory
       uses: actions/upload-artifact@master
       if: always()
